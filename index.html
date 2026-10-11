@@ -209,6 +209,7 @@ let filterAktif = 'semua';
 let kataCarian = '';
 let editId = null;
 let gambarBase64 = '';
+const gambarCache = new Map();   // id → base64
 
 /* ---------- UTIL ---------- */
 const uuid = () => crypto.randomUUID ? crypto.randomUUID()
@@ -279,14 +280,14 @@ function renderSenarai() {
   }
   $('#senarai').innerHTML = data.map(r => {
     const st = statusWaranti(r.tarikhTamatWaranti);
-    const thumb = r.gambar
-      ? `<img src="${resolveGambar(r)}" loading="lazy" alt=""
-             onerror="this.outerHTML='<div class=\\'thumb-placeholder\\'>📦</div>'">`
-      : `<div class="thumb-placeholder">📦</div>`;
     const harga = r.harga ? `<p class="harga">${formatRM(r.harga)}</p>` : '';
+    // Guna ID unik untuk img supaya boleh update kemudian
+    const thumbHtml = r.gambar
+      ? `<img data-gambar-id="${r.id}" src="${gambarCache.get(r.id) || placeholderSvg()}" alt="">`
+      : `<div class="thumb-placeholder">📦</div>`;
     return `
       <div class="kad" data-id="${r.id}">
-        <div class="thumb">${thumb}</div>
+        <div class="thumb">${thumbHtml}</div>
         <div class="info">
           <h3>${escapeHtml(r.nama)}</h3>
           ${r.serialNumber ? `<p class="sn">SN: ${escapeHtml(r.serialNumber)}</p>` : ''}
@@ -299,8 +300,64 @@ function renderSenarai() {
         </div>
       </div>`;
   }).join('');
+
+  // Selepas render, load gambar secara async
+  data.forEach(r => {
+    if (r.gambar && !gambarCache.has(r.id)) {
+      loadGambarAsync(r);
+    } else if (r.gambar && gambarCache.has(r.id)) {
+      const img = document.querySelector(`img[data-gambar-id="${r.id}"]`);
+      if (img) img.src = gambarCache.get(r.id);
+    }
+  });
 }
 
+/* Placeholder SVG kecil */
+function placeholderSvg() {
+  return 'data:image/svg+xml;utf8,' + encodeURIComponent(
+    '<svg xmlns="http://www.w3.org/2000/svg" width="56" height="56">'
+    + '<rect width="56" height="56" fill="#e2e8f0" rx="8"/>'
+    + '<text x="28" y="34" font-size="20" text-anchor="middle">📦</text></svg>'
+  );
+}
+
+/* Load gambar async via fetch → base64 */
+async function loadGambarAsync(r) {
+  if (!r.gambar || !GAS_URL) return;
+
+  // Kalau base64 sedia ada
+  if (r.gambar.startsWith('data:')) {
+    gambarCache.set(r.id, r.gambar);
+    const img = document.querySelector(`img[data-gambar-id="${r.id}"]`);
+    if (img) img.src = r.gambar;
+    return;
+  }
+
+  // Extract file ID
+  let fileId = '';
+  if (r.gambar.startsWith('GAS_PROXY:')) {
+    fileId = r.gambar.slice(10);
+  } else if (r.gambar.includes('drive.google.com')) {
+    const m = r.gambar.match(/[-\w]{25,}/);
+    if (m) fileId = m[0];
+  } else if (r.gambarId) {
+    fileId = r.gambarId;
+  }
+  if (!fileId) return;
+
+  try {
+    // Guna JSON endpoint supaya tak kena tracking prevention
+    const res = await fetch(GAS_URL + '?action=gambarBase64&id=' + fileId);
+    const j = await res.json();
+    if (j.ok && j.data) {
+      gambarCache.set(r.id, j.data);
+      const img = document.querySelector(`img[data-gambar-id="${r.id}"]`);
+      if (img) img.src = j.data;
+    }
+  } catch (e) {
+    console.warn('Gagal load gambar:', r.nama, e);
+  }
+}
 /* ---------- RESOLVE URL GAMBAR ---------- */
 function resolveGambar(r) {
   if (!r.gambar) return '';
@@ -321,19 +378,6 @@ function resolveGambar(r) {
   return r.gambar;
 }
 
-  // Muat preview gambar lama
-if (r.gambar && r.gambarId) {
-  dapatGambar(r.gambarId).then(url => {
-    if (url) $('#previewGambar').innerHTML = `<img src="${url}">`;
-  });
-} else if (r.gambar && r.gambar.startsWith('data:')) {
-  $('#previewGambar').innerHTML = `<img src="${r.gambar}">`;
-} else if (r.gambar && r.gambar.startsWith('GAS_PROXY:')) {
-  dapatGambar(r.gambar.slice(10)).then(url => {
-    if (url) $('#previewGambar').innerHTML = `<img src="${url}">`;
-  });
-}
-  
 /* ---------- MODAL BORANG ---------- */
 function bukaModal(id = null) {
   editId = id;
@@ -354,7 +398,7 @@ function bukaModal(id = null) {
           <span class="preview-hint">Kamera atau galeri · auto-compress</span>
         </label>
         <div id="previewGambar" class="preview">
-          <div id="previewImgLama" style="font-size:.8rem;color:#94a3b8"></div>
+          ${r.gambar ? `<img src="${resolveGambar(r)}">` : ''}
         </div>
 
         <label>Nama Barang *
