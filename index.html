@@ -548,6 +548,54 @@ async function syncKeDrive(senyap = false) {
   }
 }
 
+
+/* ---------- MUAT DARI DRIVE ---------- */
+async function muatDariDrive(senyap = false) {
+  if (!GAS_URL) { toast('Tetapan Google Script belum diisi'); return; }
+  if (!senyap) { setStatus('⏳'); toast('Memuat dari Drive...'); }
+  try {
+    const res = await fetch(GAS_URL + '?action=load', {
+      method: 'GET',
+      redirect: 'follow'
+    });
+
+    // Baca text dulu — elak isu Content-Type
+    const text = await res.text();
+    console.log('Response dari Drive:', text.slice(0, 300));
+
+    let j;
+    try {
+      j = JSON.parse(text);
+    } catch (parseErr) {
+      console.error('Bukan JSON:', text.slice(0, 500));
+      throw new Error('Response bukan JSON — cek Console');
+    }
+
+    if (!j.ok) throw new Error(j.error || 'Gagal');
+
+    if (!Array.isArray(j.data)) {
+      console.error('Data bukan array:', j.data);
+      throw new Error('Format data salah');
+    }
+
+    if (j.data.length === 0) {
+      if (!senyap) toast('Tiada data dalam Drive');
+      return;
+    }
+
+    if (!senyap && !confirm(`Ganti rekod semasa dengan ${j.data.length} rekod dari Drive?`)) return;
+
+    rekod = j.data;
+    simpanLocal();
+    renderSenarai();
+    setStatus('✓ Dimuat');
+    if (!senyap) toast(`✅ Dimuat: ${rekod.length} rekod`);
+  } catch (e) {
+    console.warn('Restore gagal:', e);
+    setStatus('⚠️');
+    if (!senyap) toast('Gagal muat: ' + e.message);
+  }
+}
 /* ---------- UPLOAD GAMBAR KE DRIVE ---------- */
 async function uploadGambar(namaFail, base64) {
   const res = await fetch(GAS_URL, {
