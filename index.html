@@ -321,6 +321,19 @@ function resolveGambar(r) {
   return r.gambar;
 }
 
+  // Muat preview gambar lama
+if (r.gambar && r.gambarId) {
+  dapatGambar(r.gambarId).then(url => {
+    if (url) $('#previewGambar').innerHTML = `<img src="${url}">`;
+  });
+} else if (r.gambar && r.gambar.startsWith('data:')) {
+  $('#previewGambar').innerHTML = `<img src="${r.gambar}">`;
+} else if (r.gambar && r.gambar.startsWith('GAS_PROXY:')) {
+  dapatGambar(r.gambar.slice(10)).then(url => {
+    if (url) $('#previewGambar').innerHTML = `<img src="${url}">`;
+  });
+}
+  
 /* ---------- MODAL BORANG ---------- */
 function bukaModal(id = null) {
   editId = id;
