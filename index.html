@@ -1,0 +1,1486 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#2563eb">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>Rekod Barang</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+body {
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  background: #f1f5f9; color: #1e293b;
+  max-width: 600px; margin: 0 auto; min-height: 100vh;
+  padding-bottom: env(safe-area-inset-bottom);
+}
+header {
+  background: #2563eb; color: white; padding: .85rem 1rem;
+  display: flex; justify-content: space-between; align-items: center;
+  position: sticky; top: 0; z-index: 10;
+  padding-top: calc(.85rem + env(safe-area-inset-top));
+}
+header h1 { font-size: 1.05rem; }
+.header-aksi { display: flex; gap: .3rem; align-items: center; }
+.header-aksi button {
+  background: rgba(255,255,255,.18); border: none; color: white;
+  padding: .45rem .55rem; border-radius: 8px; font-size: 1rem;
+  cursor: pointer; line-height: 1;
+}
+.header-aksi button:active { background: rgba(255,255,255,.35); }
+.status { font-size: .7rem; opacity: .9; min-width: 60px; text-align: right; }
+
+.search-bar {
+  display: flex; gap: .5rem; padding: .7rem;
+  position: sticky; top: 56px; background: #f1f5f9; z-index: 5;
+}
+.search-bar input {
+  flex: 1; padding: .7rem .9rem; border: 1px solid #e2e8f0;
+  border-radius: 10px; font-size: 1rem; background: white;
+}
+.search-bar button {
+  background: #2563eb; color: white; border: none;
+  width: 48px; border-radius: 10px; font-size: 1.5rem;
+  cursor: pointer; line-height: 1;
+}
+
+.filter { display: flex; gap: .4rem; padding: 0 .7rem .6rem; }
+.filter button {
+  flex: 1; padding: .5rem; border: 1px solid #e2e8f0;
+  background: white; border-radius: 8px; cursor: pointer;
+  font-size: .85rem; color: #475569;
+}
+.filter button.aktif { background: #2563eb; color: white; border-color: #2563eb; }
+
+main { padding: 0 .5rem 2rem; }
+.kad {
+  background: white; border-radius: 12px; padding: .75rem;
+  margin-bottom: .5rem; display: flex; align-items: center; gap: .75rem;
+  box-shadow: 0 1px 3px rgba(0,0,0,.06);
+  cursor: pointer; transition: transform .1s;
+}
+.kad:active { transform: scale(.98); }
+.thumb { width: 56px; height: 56px; flex-shrink: 0; }
+.thumb img, .thumb-placeholder {
+  width: 100%; height: 100%; object-fit: cover; border-radius: 8px;
+}
+.thumb-placeholder {
+  display: flex; align-items: center; justify-content: center;
+  background: #e2e8f0; font-size: 1.4rem;
+}
+.info { flex: 1; min-width: 0; }
+.info h3 { font-size: .95rem; margin-bottom: .15rem; overflow: hidden;
+  text-overflow: ellipsis; white-space: nowrap; }
+  
+.info .sn {
+  font-size: .75rem; color: #64748b; margin-bottom: .3rem;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.info .harga { font-size: .78rem; color: #059669; font-weight: 600; margin-bottom: .25rem; }
+
+.kad-aksi {
+  display: flex; flex-direction: column; gap: .3rem;
+  margin-left: .25rem;
+}
+.kad-aksi button {
+  background: transparent; border: none; font-size: 1rem;
+  cursor: pointer; padding: .35rem; border-radius: 6px;
+  opacity: .6; transition: opacity .15s, background .15s;
+}
+.kad-aksi button:active { opacity: 1; background: #f1f5f9; }
+.kad-aksi button:hover { opacity: 1; background: #f1f5f9; }  
+
+
+
+.badge {
+  font-size: .68rem; padding: .18rem .5rem; border-radius: 20px;
+  display: inline-block; font-weight: 600;
+}
+.badge.aktif  { background: #dcfce7; color: #166534; }
+.badge.hampir { background: #fef3c7; color: #92400e; }
+.badge.tamat  { background: #fee2e2; color: #991b1b; }
+.badge.neutral{ background: #e2e8f0; color: #475569; }
+
+.kosong { text-align: center; padding: 3rem 1rem; color: #64748b; }
+.kosong p:first-child { font-size: 2rem; margin-bottom: .5rem; }
+.kosong .kecil { font-size: .85rem; margin-top: .25rem; }
+
+/* MODAL */
+#modal {
+  position: fixed; inset: 0; background: rgba(0,0,0,.5);
+  display: flex; align-items: flex-end; z-index: 100;
+}
+#modal.hidden { display: none; }
+.modal-kandungan {
+  background: white; width: 100%; max-height: 94vh;
+  border-radius: 16px 16px 0 0; overflow-y: auto;
+  animation: slideUp .2s ease; max-width: 600px; margin: 0 auto;
+}
+@keyframes slideUp { from { transform: translateY(40px); opacity: 0; } }
+.modal-header {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 1rem; border-bottom: 1px solid #e2e8f0;
+  position: sticky; top: 0; background: white; z-index: 1;
+}
+.modal-header h2 { font-size: 1.05rem; }
+.modal-header button {
+  background: transparent; border: none; font-size: 1.3rem;
+  cursor: pointer; color: #64748b; padding: .2rem .4rem;
+}
+.borang { padding: 1rem; display: flex; flex-direction: column; gap: .8rem; }
+.borang label {
+  display: flex; flex-direction: column; gap: .3rem;
+  font-size: .82rem; color: #475569; font-weight: 500;
+}
+.borang input, .borang select, .borang textarea {
+  padding: .7rem .8rem; border: 1px solid #e2e8f0;
+  border-radius: 8px; font-size: 1rem; font-family: inherit;
+  background: white; color: #1e293b; width: 100%;
+}
+.borang input:focus, .borang select:focus, .borang textarea:focus {
+  outline: none; border-color: #2563eb;
+}
+.preview img { max-width: 100%; max-height: 200px; border-radius: 8px; margin-top: .3rem; }
+.preview-hint { font-size: .75rem; color: #94a3b8; }
+
+.aksi { display: flex; gap: .5rem; margin-top: 1rem; }
+.aksi button {
+  flex: 1; padding: .85rem; border-radius: 10px; font-size: 1rem;
+  cursor: pointer; border: none; font-weight: 600;
+}
+.utama { background: #2563eb; color: white; }
+.sekunder { background: #e2e8f0; color: #1e293b; }
+.bahaya { background: #fee2e2; color: #991b1b; }
+
+.laporan { padding: 1rem; }
+.laporan-filter {
+  display: grid; grid-template-columns: 1fr 1fr; gap: .5rem;
+  margin-bottom: 1rem; padding-bottom: 1rem;
+  border-bottom: 1px solid #e2e8f0;
+}
+.laporan-filter label {
+  display: flex; flex-direction: column; gap: .25rem;
+  font-size: .75rem; color: #475569; font-weight: 500;
+}
+.laporan-filter select,
+.laporan-filter input {
+  padding: .5rem; border: 1px solid #e2e8f0;
+  border-radius: 8px; font-size: .9rem; font-family: inherit;
+  background: white; color: #1e293b;
+}
+.laporan-filter .penuh { grid-column: 1 / -1; }
+
+.stat {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: .7rem .8rem; background: #f8fafc; border-radius: 8px;
+  margin-bottom: .4rem;
+}
+.stat strong { color: #2563eb; font-size: 1.05rem; }
+
+.jadual {
+  width: 100%; border-collapse: collapse; font-size: .8rem;
+  margin-top: .5rem;
+}
+.jadual th {
+  background: #f1f5f9; padding: .5rem .4rem; text-align: left;
+  font-size: .75rem; color: #475569; font-weight: 600;
+  border-bottom: 1px solid #e2e8f0;
+}
+.jadual td {
+  padding: .5rem .4rem; border-bottom: 1px solid #f1f5f9;
+  vertical-align: top;
+}
+.jadual tr:last-child td { border-bottom: none; }
+.jadual .kanan { text-align: right; }
+.jadual .kecil { font-size: .7rem; color: #94a3b8; }
+
+.kosong-laporan {
+  text-align: center; padding: 2rem 1rem; color: #94a3b8;
+  font-size: .9rem;
+}
+
+/* Print */
+@media print {
+  body { background: white; max-width: 100%; }
+
+  /* Sembunyikan SEMUA elemen UI biasa */
+  header,
+  .search-bar,
+  .filter,
+  #toast,
+  main,                    /* ⭐ INI YANG TERTINGGAL */
+  #senarai,                /* ⭐ backup */
+  .modal-header button,
+  .laporan-filter,
+  .aksi,
+  .kad-aksi { display: none !important; }
+
+  /* Pastikan modal (laporan) muncul */
+  #modal {
+    position: static !important;
+    background: white !important;
+    display: block !important;
+    inset: auto !important;
+  }
+  #modal.hidden { display: none !important; }
+
+  .modal-kandungan {
+    max-height: none !important;
+    border-radius: 0 !important;
+    max-width: 100% !important;
+    animation: none !important;
+    overflow: visible !important;
+    box-shadow: none !important;
+  }
+
+  .modal-header {
+    border-bottom: 2px solid #2563eb;
+    padding: .5rem 0 !important;
+  }
+
+  .stat { background: #f8fafc !important; }
+  .jadual { font-size: .75rem; }
+  .jadual th { background: #e2e8f0 !important; }
+
+  .print-tajuk {
+    display: block !important;
+    text-align: center;
+    margin-bottom: 1rem;
+    padding-bottom: .5rem;
+    border-bottom: 1px solid #e2e8f0;
+  }
+
+  /* Elak page break dalam baris jadual */
+  .jadual tr { page-break-inside: avoid; }
+  .jadual thead { display: table-header-group; }
+}
+
+.print-tajuk { display: none; }
+
+
+
+
+
+.toast {
+  position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+  background: #1e293b; color: white; padding: .7rem 1.2rem;
+  border-radius: 20px; font-size: .85rem; z-index: 200;
+  opacity: 0; transition: opacity .3s; pointer-events: none;
+}
+.toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+
+<!-- PIN Gate -->
+<div id="pinGate" style="
+  position:fixed;inset:0;background:#2563eb;
+  display:flex;align-items:center;justify-content:center;
+  z-index:9999;flex-direction:column;padding:1rem;
+">
+  <div style="background:white;border-radius:16px;padding:1.5rem;max-width:320px;width:100%;text-align:center">
+    <h1 style="font-size:1.5rem;margin-bottom:.25rem">🔒</h1>
+    <h2 style="font-size:1.05rem;margin-bottom:1rem;color:#1e293b">Rekod Barang</h2>
+    <p id="pinMsg" style="font-size:.85rem;color:#64748b;margin-bottom:1rem">Masukkan 4-digit PIN</p>
+    <div id="pinDots" style="display:flex;gap:.75rem;justify-content:center;margin-bottom:1.25rem">
+      <span class="dot"></span><span class="dot"></span>
+      <span class="dot"></span><span class="dot"></span>
+    </div>
+	
+	
+    <div id="pinPad" style="display:grid;grid-template-columns:repeat(3,1fr);gap:.5rem">
+  <button class="pin-btn" data-pin="1">1</button>
+  <button class="pin-btn" data-pin="2">2</button>
+  <button class="pin-btn" data-pin="3">3</button>
+  <button class="pin-btn" data-pin="4">4</button>
+  <button class="pin-btn" data-pin="5">5</button>
+  <button class="pin-btn" data-pin="6">6</button>
+  <button class="pin-btn" data-pin="7">7</button>
+  <button class="pin-btn" data-pin="8">8</button>
+  <button class="pin-btn" data-pin="9">9</button>
+  <button class="pin-btn kosong"></button>
+  <button class="pin-btn" data-pin="0">0</button>
+  <button class="pin-btn" id="pinDelete">⌫</button>
+</div>
+
+    <p style="font-size:.75rem;color:#94a3b8;margin-top:1rem">
+      <a href="#" id="pinForgot" style="color:#94a3b8;text-decoration:underline">
+        Lupa PIN?
+      </a>
+    </p>
+  </div>
+</div>
+
+
+
+
+<style>
+.pin-btn {
+  padding:1rem;font-size:1.3rem;font-weight:600;
+  background:#f1f5f9;border:none;border-radius:12px;
+  cursor:pointer;color:#1e293b;
+  transition:background .15s;
+}
+.pin-btn:active { background:#e2e8f0; }
+.pin-btn.kosong { background:transparent;cursor:default; }
+#pinDots .dot {
+  width:14px;height:14px;border-radius:50%;
+  background:#e2e8f0;transition:background .15s;
+}
+#pinDots .dot.aktif { background:#2563eb; }
+#pinDots .dot.salah { background:#ef4444; }
+</style>
+
+
+<header>
+  <h1>📦 Rekod Barang</h1>
+  <div class="header-aksi">
+    <span class="status" id="status">—</span>
+    <button id="btnSync" title="Sync">🔄</button>
+    <button id="btnLaporan" title="Laporan">📊</button>
+    <button id="btnTetapan" title="Tetapan">⚙️</button>
+  </div>
+</header>
+
+<div class="search-bar">
+  <input type="search" id="carian" placeholder="🔍 Cari nama / SN / tempat beli...">
+  <button id="btnTambah">+</button>
+</div>
+
+<div class="filter">
+  <button data-filter="semua" class="aktif">Semua</button>
+  <button data-filter="aktif">Aktif</button>
+  <button data-filter="hampir">Hampir</button>
+  <button data-filter="tamat">Tamat</button>
+</div>
+
+<main id="senarai"></main>
+<div id="modal" class="hidden"></div>
+<div id="toast" class="toast"></div>
+
+<script>
+/* =========================================================
+   REKOD BARANG — app
+   ========================================================= */
+
+const $  = s => document.querySelector(s);
+const $$ = s => document.querySelectorAll(s);
+
+const GAS_URL_KEY = 'gas_url';
+let GAS_URL = localStorage.getItem(GAS_URL_KEY) || '';
+let rekod = [];
+let filterAktif = 'semua';
+let kataCarian = '';
+let editId = null;
+let gambarBase64 = '';
+const gambarCache = new Map();   // ⭐ tambah ini
+
+/* =========================================================
+   PIN GATE
+   ========================================================= */
+
+// ⚠️ TUKAR NILAI INI kepada PIN anda
+// Guna hash mudah supaya PIN tak nampak jelas dalam kod
+const PIN_HASH = '03ac674216f3e15c761ee1a5e255f067953623c8b388b4459e13f978d7c846f4';
+// ↑ Ini hash SHA-256 untuk "1234" — TUKAR!
+
+let pinInput = '';
+let pinCubaan = 0;
+
+async function hashPin(pin) {
+  const enc = new TextEncoder().encode(pin);
+  const buf = await crypto.subtle.digest('SHA-256', enc);
+  return Array.from(new Uint8Array(buf))
+    .map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+function kemaskiniDots() {
+  const dots = document.querySelectorAll('#pinDots .dot');
+  dots.forEach((d, i) => {
+    d.classList.toggle('aktif', i < pinInput.length);
+  });
+}
+
+function pinSalah() {
+  const dots = document.querySelectorAll('#pinDots .dot');
+  dots.forEach(d => d.classList.add('salah'));
+  $('#pinMsg').textContent = '❌ PIN salah';
+  $('#pinMsg').style.color = '#ef4444';
+  setTimeout(() => {
+    dots.forEach(d => d.classList.remove('salah', 'aktif'));
+    pinInput = '';
+    $('#pinMsg').textContent = 'Masukkan 4-digit PIN';
+    $('#pinMsg').style.color = '#64748b';
+  }, 700);
+}
+
+async function pinSemak() {
+  const hash = await hashPin(pinInput);
+  if (hash === PIN_HASH) {
+    sessionStorage.setItem('pin_ok', '1');
+    bukaApp();          // ⭐ panggil bukaApp — dia pasang event sekali
+  } else {
+    pinCubaan++;
+    if (pinCubaan >= 5) {
+      $('#pinMsg').textContent = '⛔ Terlalu banyak cubaan. Tutup app.';
+      setTimeout(() => location.reload(), 3000);
+      return;
+    }
+    pinSalah();
+  }
+}
+
+function pinTambah(n) {
+  if (pinInput.length >= 4) return;
+  pinInput += n;
+  kemaskiniDots();
+  if (pinInput.length === 4) {
+    setTimeout(pinSemak, 150);
+  }
+}
+
+function pinPadam() {
+  pinInput = pinInput.slice(0, -1);
+  kemaskiniDots();
+}
+
+// Event listener PIN pad
+document.addEventListener('click', (e) => {
+  const btn = e.target.closest('.pin-btn');
+  if (!btn) return;
+  const pin = btn.dataset.pin;
+  if (pin !== undefined) pinTambah(pin);
+});
+$('#pinDelete')?.addEventListener('click', pinPadam);
+
+// Lupa PIN
+$('#pinForgot')?.addEventListener('click', (e) => {
+  e.preventDefault();
+  if (confirm('Lupa PIN? Anda perlu clear data app. Data di Drive tidak terjejas. Teruskan?')) {
+    localStorage.clear();
+    sessionStorage.clear();
+    location.reload();
+  }
+});
+
+// Semak kalau dah login dalam sesi ini
+if (sessionStorage.getItem('pin_ok') === '1') {
+  $('#pinGate').style.display = 'none';
+}
+/* ---------- UTIL ---------- */
+const uuid = () => crypto.randomUUID ? crypto.randomUUID()
+  : Date.now() + '-' + Math.random().toString(36).slice(2);
+
+function hariTinggal(t) {
+  if (!t) return null;
+  return Math.ceil((new Date(t) - new Date()) / 86400000);
+}
+function statusWaranti(t) {
+  const h = hariTinggal(t);
+  if (h === null) return { teks: 'Tiada waranti', kelas: 'neutral' };
+  if (h < 0) return { teks: `Tamat ${Math.abs(h)} hari lalu`, kelas: 'tamat' };
+  if (h <= 30) return { teks: `⚠️ ${h} hari lagi`, kelas: 'hampir' };
+  return { teks: `${h} hari lagi`, kelas: 'aktif' };
+}
+function formatRM(n) {
+  if (n === null || n === undefined || n === '') return '-';
+  return 'RM ' + Number(n).toLocaleString('ms-MY', { minimumFractionDigits: 2 });
+}
+function escapeHtml(s) {
+  return String(s || '').replace(/[&<>"']/g, c => ({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+  }[c]));
+}
+function toast(msg) {
+  const t = $('#toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(t._tid);
+  t._tid = setTimeout(() => t.classList.remove('show'), 2200);
+}
+function setStatus(msg) { $('#status').textContent = msg; }
+
+/* ---------- STORAGE LOCAL ---------- */
+function simpanLocal() {
+  localStorage.setItem('rekod', JSON.stringify(rekod));
+}
+function muatLocal() {
+  try { rekod = JSON.parse(localStorage.getItem('rekod')) || []; }
+  catch { rekod = []; }
+}
+
+/* ---------- RENDER ---------- */
+function rekodDitapis() {
+  const q = kataCarian.toLowerCase().trim();
+  return rekod.filter(r => {
+    const h = hariTinggal(r.tarikhTamatWaranti);
+    if (filterAktif === 'aktif'  && (h === null || h < 0)) return false;
+    if (filterAktif === 'hampir' && (h === null || h < 0 || h > 30)) return false;
+    if (filterAktif === 'tamat'  && (h === null || h >= 0)) return false;
+    if (!q) return true;
+    return ['nama','serialNumber','tempatBeli','kategori','nota']
+      .some(k => (r[k] || '').toLowerCase().includes(q));
+  });
+}
+
+function renderSenarai() {
+  let data = rekodDitapis();
+
+  // Kalau tiada carian & tiada filter khas → tunjuk 5 terakhir sahaja
+  const adaCarian = kataCarian.trim().length > 0;
+  const adaFilter = filterAktif !== 'semua';
+
+  if (!adaCarian && !adaFilter) {
+    // Susun ikut tarikh dicipta (terbaru dulu), ambil 5
+    data = [...rekod]
+      .sort((a, b) => new Date(b.dicipta || 0) - new Date(a.dicipta || 0))
+      .slice(0, 5);
+  }
+
+  if (!data.length) {
+    $('#senarai').innerHTML = `
+      <div class="kosong">
+        <p>🔍</p>
+        <p>${adaCarian ? 'Tiada hasil carian' : 'Taip untuk cari barang'}</p>
+        <p class="kecil">Tekan + untuk tambah barang baru</p>
+      </div>`;
+    return;
+  }
+
+  // Papar senarai
+  $('#senarai').innerHTML = data.map(r => {
+    const st = statusWaranti(r.tarikhTamatWaranti);
+    const harga = r.harga ? `<p class="harga">${formatRM(r.harga)}</p>` : '';
+    const thumbHtml = r.gambar
+      ? `<img data-gambar-id="${r.id}" src="${gambarCache.get(r.id) || placeholderSvg()}" alt="">`
+      : `<div class="thumb-placeholder">📦</div>`;
+    return `
+      <div class="kad" data-id="${r.id}">
+        <div class="thumb">${thumbHtml}</div>
+        <div class="info">
+          <h3>${escapeHtml(r.nama)}</h3>
+          ${r.serialNumber ? `<p class="sn">SN: ${escapeHtml(r.serialNumber)}</p>` : ''}
+          ${harga}
+          <span class="badge ${st.kelas}">${st.teks}</span>
+        </div>
+        <div class="kad-aksi">
+          <button data-edit="${r.id}" title="Edit">✏️</button>
+          <button data-padam="${r.id}" title="Padam">🗑️</button>
+        </div>
+      </div>`;
+  }).join('');
+
+  // Nota kecil di bawah kalau mode "5 terakhir"
+  if (!adaCarian && !adaFilter && rekod.length > 5) {
+    $('#senarai').innerHTML += `
+      <p style="text-align:center;font-size:.8rem;color:#94a3b8;padding:.8rem">
+        Menunjukkan 5 terakhir · Taip untuk cari semua
+      </p>`;
+  }
+
+  // Load gambar async
+  data.forEach(r => {
+    if (r.gambar && !gambarCache.has(r.id)) {
+      loadGambarAsync(r);
+    } else if (r.gambar && gambarCache.has(r.id)) {
+      const img = document.querySelector(`img[data-gambar-id="${r.id}"]`);
+      if (img) img.src = gambarCache.get(r.id);
+    }
+  });
+}
+
+// Tambah di atas fail
+const imgObserver = new IntersectionObserver((entries) => {
+  entries.forEach(e => {
+    if (e.isIntersecting) {
+      const img = e.target;
+      const id = img.dataset.gambarId;
+      const r = rekod.find(x => x.id === id);
+      if (r) loadGambarAsync(r);
+      imgObserver.unobserve(img);
+    }
+  });
+}, { rootMargin: '100px' });
+
+
+/* Placeholder SVG kecil */
+function placeholderSvg() {
+  return 'data:image/svg+xml;utf8,' + encodeURIComponent(
+    '<svg xmlns="http://www.w3.org/2000/svg" width="56" height="56">'
+    + '<rect width="56" height="56" fill="#e2e8f0" rx="8"/>'
+    + '<text x="28" y="34" font-size="20" text-anchor="middle">📦</text></svg>'
+  );
+}
+
+/* Load gambar async via fetch → base64 */
+async function loadGambarAsync(r) {
+  if (!r.gambar || !GAS_URL) return;
+
+  // Kalau base64 sedia ada
+  if (r.gambar.startsWith('data:')) {
+    gambarCache.set(r.id, r.gambar);
+    const img = document.querySelector(`img[data-gambar-id="${r.id}"]`);
+    if (img) img.src = r.gambar;
+    return;
+  }
+
+  // Extract file ID
+  let fileId = '';
+  if (r.gambar.startsWith('GAS_PROXY:')) {
+    fileId = r.gambar.slice(10);
+  } else if (r.gambar.includes('drive.google.com')) {
+    const m = r.gambar.match(/[-\w]{25,}/);
+    if (m) fileId = m[0];
+  } else if (r.gambarId) {
+    fileId = r.gambarId;
+  }
+  if (!fileId) return;
+
+  try {
+    // Guna JSON endpoint supaya tak kena tracking prevention
+    const res = await fetch(GAS_URL + '?action=gambarBase64&id=' + fileId);
+    const j = await res.json();
+    if (j.ok && j.data) {
+      gambarCache.set(r.id, j.data);
+      const img = document.querySelector(`img[data-gambar-id="${r.id}"]`);
+      if (img) img.src = j.data;
+    }
+  } catch (e) {
+    console.warn('Gagal load gambar:', r.nama, e);
+  }
+}
+/* ---------- RESOLVE URL GAMBAR ---------- */
+function resolveGambar(r) {
+  if (!r.gambar) return '';
+  // Format lama: URL Drive (tak boleh hotlink)
+  if (r.gambar.includes('drive.google.com')) {
+    // Cuba extract ID & guna proxy
+    const m = r.gambar.match(/[-\w]{25,}/);
+    if (m && GAS_URL) return GAS_URL + '?action=gambar&id=' + m[0];
+    return r.gambar;
+  }
+  // Format baru: GAS_PROXY:xxx
+  if (r.gambar.startsWith('GAS_PROXY:')) {
+    const id = r.gambar.slice(10);
+    return GAS_URL ? GAS_URL + '?action=gambar&id=' + id : '';
+  }
+  // Base64
+  if (r.gambar.startsWith('data:')) return r.gambar;
+  return r.gambar;
+}
+
+/* ---------- MODAL BORANG ---------- */
+function bukaModal(id = null) {
+  editId = id;
+  const r = id ? rekod.find(x => x.id === id) : {};
+  gambarBase64 = r.gambar || '';
+
+  const modal = $('#modal');
+  modal.classList.remove('hidden');
+  modal.innerHTML = `
+    <div class="modal-kandungan">
+      <header class="modal-header">
+        <h2>${id ? 'Edit Barang' : 'Tambah Barang'}</h2>
+        <button id="tutupModal">✕</button>
+      </header>
+      <form id="borang" class="borang">
+        <label>Gambar
+          <input type="file" id="inputGambar" accept="image/*" capture="environment">
+          <span class="preview-hint">Kamera atau galeri · auto-compress</span>
+        </label>
+        <div id="previewGambar" class="preview">
+          ${r.gambar ? `<img src="${resolveGambar(r)}">` : ''}
+        </div>
+
+        <label>Nama Barang *
+          <input type="text" name="nama" required value="${escapeHtml(r.nama || '')}" autocomplete="off">
+        </label>
+
+        <label>Serial Number
+  <div style="display:flex;gap:.4rem">
+    <input type="text" name="serialNumber" id="inputSN" value="${escapeHtml(r.serialNumber || '')}" autocomplete="off" style="flex:1">
+    <button type="button" id="btnScan" title="Scan barcode"
+      style="background:#2563eb;color:white;border:none;padding:0 .9rem;border-radius:8px;font-size:1.2rem;cursor:pointer">
+      📷
+    </button>
+  </div>
+  <span class="preview-hint">Taip manual atau tekan 📷 untuk scan</span>
+</label>
+
+        <label>Kategori
+          <select name="kategori">
+            ${['Elektronik','Perabot','Kenderaan','Alat','Pakaian','Lain-lain']
+              .map(k => `<option ${r.kategori === k ? 'selected' : ''}>${k}</option>`).join('')}
+          </select>
+        </label>
+
+        <label>Tarikh Beli
+          <input type="date" name="tarikhBeli" value="${r.tarikhBeli || ''}">
+        </label>
+
+        <label>Harga (RM)
+          <input type="number" name="harga" step="0.01" inputmode="decimal" value="${r.harga || ''}">
+        </label>
+
+        <label>Tempat Beli
+          <input type="text" name="tempatBeli" value="${escapeHtml(r.tempatBeli || '')}" autocomplete="off">
+        </label>
+
+        <label>Tempoh Waranti (bulan)
+          <input type="number" name="tempohWaranti" inputmode="numeric" value="${r.tempohWaranti || ''}">
+        </label>
+
+        <label>Tarikh Tamat Waranti
+          <input type="date" name="tarikhTamatWaranti" value="${r.tarikhTamatWaranti || ''}">
+        </label>
+
+        <label>Nota
+          <textarea name="nota" rows="2">${escapeHtml(r.nota || '')}</textarea>
+        </label>
+
+        <div class="aksi">
+          ${id ? `<button type="button" id="btnPadam" class="bahaya">Padam</button>` : ''}
+          <button type="button" id="btnBatal" class="sekunder">Batal</button>
+          <button type="submit" class="utama">Simpan</button>
+        </div>
+      </form>
+    </div>`;
+
+  $('#tutupModal').onclick = tutupModal;
+  $('#btnBatal').onclick = tutupModal;
+  if (id) $('#btnPadam').onclick = () => padamRekod(id);
+
+  const borang = $('#borang');
+  ['tarikhBeli','tempohWaranti'].forEach(n =>
+    borang[n].addEventListener('change', () => autoKiraTamat(borang))
+  );
+
+  $('#inputGambar').addEventListener('change', async e => {
+  const f = e.target.files[0];
+  if (!f) return;
+  toast('Memproses gambar...');
+  gambarBase64 = await compressGambar(f, 800, 0.7);
+  $('#previewGambar').innerHTML = `<img src="${gambarBase64}">`;
+  toast('Gambar sedia');
+});
+  
+  
+  
+
+
+    borang.onsubmit = async e => {
+    e.preventDefault();
+    const data = Object.fromEntries(new FormData(borang).entries());
+    data.harga = data.harga ? parseFloat(data.harga) : null;
+    data.tempohWaranti = data.tempohWaranti ? parseInt(data.tempohWaranti) : null;
+
+    // Gambar: kalau base64 baru, upload ke Drive
+    const rekodLama = editId ? rekod.find(x => x.id === editId) : null;
+    let gambarUrl = rekodLama ? rekodLama.gambar : '';
+    let gambarId  = rekodLama ? rekodLama.gambarId : '';
+
+    // Hanya upload kalau base64 baru (data:image/...)
+const gambarBaru = gambarBase64
+  && gambarBase64.startsWith('data:')
+  && gambarBase64 !== (rekodLama?.gambar || '');
+    if (gambarBaru && GAS_URL && gambarBase64.startsWith('data:')) {
+      toast('Memuat naik gambar...');
+      try {
+        const namaFail = (data.nama || 'barang')
+          .replace(/[^a-z0-9]/gi, '_').slice(0, 30)
+          + '-' + Date.now() + '.jpg';
+        const up = await uploadGambar(namaFail, gambarBase64);
+        if (up.ok) {
+          // Padam gambar lama jika ada
+          if (gambarId) padamGambarDrive(gambarId);
+          gambarUrl = up.url;
+          gambarId  = up.fileId;
+        } else {
+          toast('Gagal upload gambar, simpan sebagai base64');
+          gambarUrl = gambarBase64;
+        }
+      } catch (err) {
+        console.warn(err);
+        toast('Gagal upload gambar');
+        gambarUrl = gambarBase64;
+      }
+    } else if (gambarBase64 && !GAS_URL) {
+      // Tiada GAS_URL, simpan base64 local sahaja
+      gambarUrl = gambarBase64;
+    }
+
+    data.gambar = gambarUrl;   // GAS_PROXY:xxx atau data:... atau ''
+data.gambarId = gambarId;
+
+    if (editId) {
+      const i = rekod.findIndex(x => x.id === editId);
+      rekod[i] = { ...rekod[i], ...data };
+    } else {
+      rekod.push({ id: uuid(), dicipta: new Date().toISOString(), ...data });
+    }
+
+    simpanLocal();
+    renderSenarai();
+    tutupModal();
+    toast('Disimpan');
+    syncKeDrive(true);
+  };
+}
+
+function autoKiraTamat(borang) {
+  const tb = borang.tarikhBeli.value;
+  const tw = parseInt(borang.tempohWaranti.value);
+  if (tb && tw) {
+    const d = new Date(tb);
+    d.setMonth(d.getMonth() + tw);
+    borang.tarikhTamatWaranti.value = d.toISOString().slice(0, 10);
+  }
+}
+
+function tutupModal() {
+  $('#modal').classList.add('hidden');
+  $('#modal').innerHTML = '';
+  editId = null;
+  gambarBase64 = '';
+}
+
+function padamRekod(id) {
+  if (!confirm('Padam rekod ini?')) return;
+  const r = rekod.find(x => x.id === id);
+  if (r && r.gambarId) padamGambarDrive(r.gambarId);
+  rekod = rekod.filter(x => x.id !== id);
+  simpanLocal();
+  renderSenarai();
+  tutupModal();
+  toast('Dipadam');
+  syncKeDrive(true);
+}
+
+/* ---------- COMPRESS GAMBAR ---------- */
+function compressGambar(file, maxSize = 800, quality = 0.7) {
+  return new Promise(resolve => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      const img = new Image();
+      img.onload = () => {
+        let { width, height } = img;
+        if (width > height && width > maxSize) {
+          height = height * maxSize / width; width = maxSize;
+        } else if (height > maxSize) {
+          width = width * maxSize / height; height = maxSize;
+        }
+        const c = document.createElement('canvas');
+        c.width = width; c.height = height;
+        c.getContext('2d').drawImage(img, 0, 0, width, height);
+        resolve(c.toDataURL('image/jpeg', quality));
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+/* ---------- SCAN BARCODE ---------- */
+async function scanBarcode() {
+  // Semak sokongan
+  if (!('BarcodeDetector' in window)) {
+    toast('❌ Browser tak sokong scan. Guna Chrome Android atau Safari iOS 17+');
+    return;
+  }
+
+  // Buka modal scan
+  $('#modal').classList.remove('hidden');
+  $('#modal').innerHTML = `
+    <div class="modal-kandungan">
+      <header class="modal-header">
+        <h2>📷 Scan Barcode</h2>
+        <button id="tutupScan">✕</button>
+      </header>
+      <div style="padding:1rem">
+        <video id="videoScan" autoplay playsinline muted
+          style="width:100%;border-radius:12px;background:#000;max-height:60vh"></video>
+        <p style="text-align:center;font-size:.85rem;color:#64748b;margin-top:.75rem">
+          Halakan kamera ke barcode...
+        </p>
+        <div class="aksi">
+          <button id="btnScanManual" class="sekunder">Taip Manual</button>
+          <button id="btnScanTutup" class="bahaya">Tutup</button>
+        </div>
+      </div>
+    </div>`;
+
+  const video = $('#videoScan');
+  let stream = null;
+  let detector = null;
+  let running = true;
+
+  const tutup = () => {
+    running = false;
+    if (stream) stream.getTracks().forEach(t => t.stop());
+    // Kembali ke borang asal
+    if (editId) bukaModal(editId);
+    else bukaModal();
+  };
+
+  $('#tutupScan').onclick = tutup;
+  $('#btnScanTutup').onclick = tutup;
+  $('#btnScanManual').onclick = () => {
+    running = false;
+    if (stream) stream.getTracks().forEach(t => t.stop());
+    if (editId) bukaModal(editId);
+    else bukaModal();
+    setTimeout(() => $('#inputSN')?.focus(), 100);
+  };
+
+  try {
+    // Cuba formats yang biasa
+    const formats = [
+      'ean_13', 'ean_8', 'upc_a', 'upc_e',
+      'code_128', 'code_39', 'code_93',
+      'itf', 'codabar', 'qr_code', 'data_matrix', 'pdf417'
+    ];
+    let supported = formats;
+    if (BarcodeDetector.getSupportedFormats) {
+      const ok = await BarcodeDetector.getSupportedFormats();
+      supported = formats.filter(f => ok.includes(f));
+      if (!supported.length) supported = ok;   // guna apa yang ada
+    }
+
+    detector = new BarcodeDetector({ formats: supported });
+
+    stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: 'environment' }    // kamera belakang
+    });
+    video.srcObject = stream;
+
+    // Loop scan setiap 300ms
+    const scan = async () => {
+      if (!running || video.readyState !== video.HAVE_ENOUGH_DATA) {
+        if (running) setTimeout(scan, 300);
+        return;
+      }
+      try {
+        const codes = await detector.detect(video);
+        if (codes.length > 0) {
+          const nilai = codes[0].rawValue;
+          // Berjaya! Tutup & isi
+          running = false;
+          if (stream) stream.getTracks().forEach(t => t.stop());
+
+          if (editId) bukaModal(editId);
+          else bukaModal();
+
+          setTimeout(() => {
+            const inp = $('#inputSN');
+            if (inp) {
+              inp.value = nilai;
+              inp.focus();
+              inp.select();
+            }
+            toast('✅ Barcode di-scan: ' + nilai);
+          }, 150);
+          return;
+        }
+      } catch (e) { /* abaikan ralat loop */ }
+      if (running) setTimeout(scan, 300);
+    };
+    scan();
+
+  } catch (err) {
+    console.error(err);
+    let msg = '❌ Gagal akses kamera';
+    if (err.name === 'NotAllowedError') msg = '❌ Kebenaran kamera ditolak';
+    if (err.name === 'NotFoundError')  msg = '❌ Tiada kamera dijumpai';
+    toast(msg);
+    setTimeout(tutup, 1500);
+  }
+}
+
+/* ---------- SYNC KE GOOGLE DRIVE ---------- */
+async function syncKeDrive(senyap = false) {
+  if (!GAS_URL) {
+    if (!senyap) toast('Tetapan Google Script belum diisi');
+    return;
+  }
+  if (!senyap) { setStatus('⏳'); toast('Menyimpan ke Drive...'); }
+  try {
+    const res = await fetch(GAS_URL, {
+      method: 'POST',
+      // ⚠️ PENTING: guna text/plain, bukan application/json
+      // Ini elak CORS preflight yang Apps Script tak support
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ action: 'save', data: rekod }),
+      redirect: 'follow'
+    });
+    const j = await res.json();
+    if (!j.ok) throw new Error(j.error || 'Gagal');
+    setStatus('✓ ' + new Date().toLocaleTimeString('ms-MY', { hour: '2-digit', minute: '2-digit' }));
+    if (!senyap) toast('Disimpan ke Drive');
+  } catch (e) {
+    console.warn(e);
+    setStatus('⚠️');
+    if (!senyap) toast('Gagal sync: ' + e.message);
+  }
+}
+
+
+/* ---------- MUAT DARI DRIVE ---------- */
+async function muatDariDrive(senyap = false) {
+  if (!GAS_URL) { toast('Tetapan Google Script belum diisi'); return; }
+  if (!senyap) { setStatus('⏳'); toast('Memuat dari Drive...'); }
+  try {
+    const res = await fetch(GAS_URL + '?action=load', {
+      method: 'GET',
+      redirect: 'follow'
+    });
+
+    // Baca text dulu — elak isu Content-Type
+    const text = await res.text();
+    console.log('Response dari Drive:', text.slice(0, 300));
+
+    let j;
+    try {
+      j = JSON.parse(text);
+    } catch (parseErr) {
+      console.error('Bukan JSON:', text.slice(0, 500));
+      throw new Error('Response bukan JSON — cek Console');
+    }
+
+    if (!j.ok) throw new Error(j.error || 'Gagal');
+
+    if (!Array.isArray(j.data)) {
+      console.error('Data bukan array:', j.data);
+      throw new Error('Format data salah');
+    }
+
+    if (j.data.length === 0) {
+      if (!senyap) toast('Tiada data dalam Drive');
+      return;
+    }
+
+    if (!senyap && !confirm(`Ganti rekod semasa dengan ${j.data.length} rekod dari Drive?`)) return;
+
+    rekod = j.data;
+    simpanLocal();
+    renderSenarai();
+    setStatus('✓ Dimuat');
+    if (!senyap) toast(`✅ Dimuat: ${rekod.length} rekod`);
+  } catch (e) {
+    console.warn('Restore gagal:', e);
+    setStatus('⚠️');
+    if (!senyap) toast('Gagal muat: ' + e.message);
+  }
+}
+/* ---------- UPLOAD GAMBAR KE DRIVE ---------- */
+async function uploadGambar(namaFail, base64) {
+  const res = await fetch(GAS_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify({ action: 'saveGambar', namaFail, base64 }),
+    redirect: 'follow'
+  });
+  const text = await res.text();   // <-- baca text dulu
+  try {
+    return JSON.parse(text);
+  } catch {
+    console.error('Response bukan JSON:', text.slice(0, 200));
+    return { ok: false, error: 'Response bukan JSON' };
+  }
+}
+
+async function padamGambarDrive(fileId) {
+  if (!fileId || !GAS_URL) return;
+  try {
+    await fetch(GAS_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ action: 'padamGambar', fileId }),
+      redirect: 'follow'
+    });
+  } catch (e) { console.warn('Gagal padam gambar:', e); }
+}
+
+/* ---------- LAPORAN ---------- */
+function bukaLaporan() {
+  $('#modal').classList.remove('hidden');
+  $('#modal').innerHTML = `
+    <div class="modal-kandungan">
+      <header class="modal-header">
+        <h2>📊 Laporan</h2>
+        <button id="tutupModal">✕</button>
+      </header>
+      <div class="laporan">
+        <div class="print-tajuk">
+          <h2 style="font-size:1.1rem">📦 Laporan Rekod Barang</h2>
+          <p style="font-size:.8rem;color:#64748b">
+            Dicetak: ${new Date().toLocaleString('ms-MY')}
+          </p>
+        </div>
+
+        <div class="laporan-filter">
+          <label>Kategori
+            <select id="fKategori">
+              <option value="">Semua Kategori</option>
+              ${[...new Set(rekod.map(r => r.kategori).filter(Boolean))]
+                .sort()
+                .map(k => `<option value="${escapeHtml(k)}">${escapeHtml(k)}</option>`)
+                .join('')}
+            </select>
+          </label>
+
+          <label>Status Waranti
+            <select id="fStatus">
+              <option value="">Semua</option>
+              <option value="aktif">Aktif (>30 hari)</option>
+              <option value="hampir">Hampir (≤30 hari)</option>
+              <option value="tamat">Tamat</option>
+              <option value="tiada">Tiada waranti</option>
+            </select>
+          </label>
+
+          <label>Tarikh Beli Dari
+            <input type="date" id="fDari">
+          </label>
+
+          <label>Tarikh Beli Hingga
+            <input type="date" id="fHingga">
+          </label>
+        </div>
+
+        <div id="laporanHasil"></div>
+      </div>
+    </div>`;
+
+  $('#tutupModal').onclick = tutupModal;
+
+  // Event listener untuk filter — auto update
+  ['fKategori','fStatus','fDari','fHingga'].forEach(id => {
+    $('#' + id).addEventListener('change', renderLaporan);
+  });
+
+  renderLaporan();
+}
+
+function renderLaporan() {
+  const kategori = $('#fKategori')?.value || '';
+  const status = $('#fStatus')?.value || '';
+  const dari = $('#fDari')?.value || '';
+  const hingga = $('#fHingga')?.value || '';
+
+  // Tapis
+  const data = rekod.filter(r => {
+    if (kategori && r.kategori !== kategori) return false;
+
+    if (status) {
+      const h = hariTinggal(r.tarikhTamatWaranti);
+      if (status === 'tiada' && h !== null) return false;
+      if (status === 'aktif' && (h === null || h < 0 || h <= 30)) return false;
+      if (status === 'hampir' && (h === null || h < 0 || h > 30)) return false;
+      if (status === 'tamat' && (h === null || h >= 0)) return false;
+    }
+
+    if (dari && r.tarikhBeli && r.tarikhBeli < dari) return false;
+    if (hingga && r.tarikhBeli && r.tarikhBeli > hingga) return false;
+
+    return true;
+  });
+
+  // Kira statistik
+  const total = data.length;
+  const nilai = data.reduce((s, r) => s + (Number(r.harga) || 0), 0);
+  const hampir = data.filter(r => {
+    const h = hariTinggal(r.tarikhTamatWaranti);
+    return h !== null && h >= 0 && h <= 30;
+  }).length;
+  const tamat = data.filter(r => {
+    const h = hariTinggal(r.tarikhTamatWaranti);
+    return h !== null && h < 0;
+  }).length;
+
+  // Susun ikut tarikh beli (terbaru dulu)
+  const dataSusun = [...data].sort((a, b) =>
+    (b.tarikhBeli || '').localeCompare(a.tarikhBeli || '')
+  );
+
+  const hasil = $('#laporanHasil');
+  if (!hasil) return;
+
+  hasil.innerHTML = `
+    <div class="stat">
+      <span>Jumlah Barang</span><strong>${total}</strong>
+    </div>
+    <div class="stat">
+      <span>Nilai Keseluruhan</span><strong>${formatRM(nilai)}</strong>
+    </div>
+    <div class="stat">
+      <span>Waranti Hampir Tamat</span><strong>${hampir}</strong>
+    </div>
+    <div class="stat">
+      <span>Waranti Dah Tamat</span><strong>${tamat}</strong>
+    </div>
+
+    ${total ? `
+      <h3 style="margin-top:1rem;font-size:.9rem">
+        Senarai Barang (${total})
+      </h3>
+      <div style="overflow-x:auto;-webkit-overflow-scrolling:touch">
+        <table class="jadual">
+          <thead>
+            <tr>
+              <th>Nama</th>
+              <th>SN</th>
+              <th>Kategori</th>
+              <th>Tempat Beli</th>
+              <th>Tarikh</th>
+              <th class="kanan">Harga</th>
+              <th>Waranti</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${dataSusun.map(r => {
+              const st = statusWaranti(r.tarikhTamatWaranti);
+              return `
+                <tr>
+                  <td><b>${escapeHtml(r.nama)}</b></td>
+                  <td class="kecil">${escapeHtml(r.serialNumber || '-')}</td>
+                  <td>${escapeHtml(r.kategori || '-')}</td>
+                  <td class="kecil">${escapeHtml(r.tempatBeli || '-')}</td>
+                  <td class="kecil">${r.tarikhBeli ? formatTarikhPendek(r.tarikhBeli) : '-'}</td>
+                  <td class="kanan">${r.harga ? formatRM(r.harga) : '-'}</td>
+                  <td><span class="badge ${st.kelas}" style="font-size:.65rem">${st.teks}</span></td>
+                </tr>`;
+            }).join('')}
+          </tbody>
+          <tfoot>
+            <tr style="background:#f8fafc;font-weight:600">
+              <td colspan="5">JUMLAH</td>
+              <td class="kanan">${formatRM(nilai)}</td>
+              <td></td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    ` : `
+      <div class="kosong-laporan">
+        <p>📭 Tiada rekod sepadan dengan filter</p>
+      </div>
+    `}
+
+    <div class="aksi">
+      <button id="btnPrint" class="utama">🖨️ Print / PDF</button>
+      <button id="btnExportCSVFilter" class="sekunder">📥 CSV</button>
+    </div>
+  `;
+
+  $('#btnPrint').onclick = () => window.print();
+  $('#btnExportCSVFilter').onclick = () => exportCSVFilter(data);
+}
+
+function formatTarikhPendek(iso) {
+  if (!iso) return '-';
+  const d = new Date(iso);
+  return d.toLocaleDateString('ms-MY', { day: '2-digit', month: '2-digit', year: '2-digit' });
+}
+
+function exportCSVFilter(data) {
+  const header = ['Nama','SN','Kategori','Tarikh Beli','Harga','Tempat Beli','Tamat Waranti','Nota'];
+  const baris = data.map(r => [
+    r.nama, r.serialNumber, r.kategori, r.tarikhBeli,
+    r.harga, r.tempatBeli, r.tarikhTamatWaranti, r.nota
+  ].map(v => `"${String(v || '').replace(/"/g,'""')}"`).join(','));
+  muatTurun(`laporan-${Date.now()}.csv`,
+    [header.join(','), ...baris].join('\n'), 'text/csv');
+}
+
+/* ---------- IMPORT JSON ---------- */
+function importJSON() {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = '.json,application/json';
+  input.onchange = e => {
+    const f = e.target.files[0];
+    if (!f) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const data = JSON.parse(reader.result);
+        if (!Array.isArray(data)) throw new Error('Bukan array');
+        if (!confirm(`Import ${data.length} rekod? Data semasa akan diganti.`)) return;
+        rekod = data;
+        simpanLocal();
+        renderSenarai();
+        toast('Import berjaya');
+        syncKeDrive(true);
+      } catch (err) {
+        toast('Fail tidak sah: ' + err.message);
+      }
+    };
+    reader.readAsText(f);
+  };
+  input.click();
+}
+
+/* ---------- TETAPAN ---------- */
+function bukaTetapan() {
+  $('#modal').classList.remove('hidden');
+  $('#modal').innerHTML = `
+    <div class="modal-kandungan">
+      <header class="modal-header">
+        <h2>⚙️ Tetapan</h2>
+        <button id="tutupModal">✕</button>
+      </header>
+      <div class="borang">
+        <label>URL Google Apps Script
+          <input type="url" id="inputGasUrl" value="${escapeHtml(GAS_URL)}"
+            placeholder="https://script.google.com/macros/s/.../exec">
+          <span class="preview-hint">Deploy Code.gs sebagai Web App, copy URL di sini</span>
+        </label>
+
+        <div class="aksi">
+          <button id="btnTest" class="sekunder">Test Sambungan</button>
+          <button id="btnSimpanUrl" class="utama">Simpan</button>
+        </div>
+
+        <hr style="border:none;border-top:1px solid #e2e8f0;margin:1rem 0">
+
+        <div class="aksi">
+          <button id="btnBackup" class="sekunder">☁️ Backup ke Drive</button>
+          <button id="btnRestore" class="sekunder">⬇️ Restore dari Drive</button>
+        </div>
+        <div class="aksi">
+  <button id="btnImport" class="sekunder">📥 Import JSON</button>
+  <button id="btnClear" class="bahaya">🗑️ Padam Semua</button>
+</div>
+<div class="aksi">
+  <button id="btnLogout" class="bahaya">🔒 Logout</button>
+</div>
+
+        <p class="preview-hint" style="text-align:center;margin-top:1rem">
+          v1.0 · Data disimpan dalam telefon + Google Drive anda
+        </p>
+      </div>
+    </div>`;
+
+  $('#tutupModal').onclick = tutupModal;
+
+  $('#btnSimpanUrl').onclick = () => {
+    const url = $('#inputGasUrl').value.trim();
+    if (!url) return toast('URL kosong');
+    if (!url.includes('script.google.com')) return toast('URL tidak sah');
+    GAS_URL = url;
+    localStorage.setItem(GAS_URL_KEY, url);
+    toast('URL disimpan');
+    setStatus('✓');
+  };
+
+  $('#btnTest').onclick = async () => {
+    const url = $('#inputGasUrl').value.trim();
+    if (!url) return toast('Isi URL dulu');
+    toast('Menguji...');
+    try {
+      const res = await fetch(url + '?action=ping');
+      const j = await res.json();
+      if (j.ok) toast('✅ Sambungan berjaya!');
+      else toast('⚠️ ' + (j.error || 'Gagal'));
+    } catch (e) {
+      toast('❌ Gagal: ' + e.message);
+    }
+  };
+
+  $('#btnBackup').onclick  = () => syncKeDrive(false);
+  $('#btnRestore').onclick = () => muatDariDrive(false);
+  $('#btnImport').onclick  = importJSON;
+  $('#btnClear').onclick = () => {
+    if (!confirm('Padam SEMUA rekod dalam telefon? (Drive tidak terjejas)')) return;
+    rekod = [];
+    simpanLocal();
+    renderSenarai();
+    tutupModal();
+    toast('Semua rekod dipadam');
+  };
+  
+}
+
+/* ---------- INIT ---------- */
+
+// Pasang semua event listener (dipanggil sekali sahaja)
+function pasangEvent() {
+  if (window._eventDahPasang) return;
+  window._eventDahPasang = true;
+
+  $('#btnTambah').onclick = () => bukaModal();
+  $('#btnLaporan').onclick = bukaLaporan;
+  $('#btnTetapan').onclick = bukaTetapan;
+  $('#btnSync').onclick = () => syncKeDrive(false);
+
+  $('#carian').oninput = e => {
+    kataCarian = e.target.value;
+    renderSenarai();
+  };
+
+  $('#senarai').addEventListener('click', (e) => {
+    const btnPadam = e.target.closest('[data-padam]');
+    if (btnPadam) {
+      e.stopPropagation();
+      padamRekod(btnPadam.dataset.padam);
+      return;
+    }
+    const btnEdit = e.target.closest('[data-edit]');
+    if (btnEdit) {
+      e.stopPropagation();
+      bukaModal(btnEdit.dataset.edit);
+      return;
+    }
+    const kad = e.target.closest('.kad');
+    if (kad) bukaModal(kad.dataset.id);
+  });
+
+  // Delegasi scan barcode
+  document.addEventListener('click', (e) => {
+    if (e.target.closest('#btnScan')) {
+      e.preventDefault();
+      scanBarcode();
+    }
+  });
+
+  // ⭐ Delegasi logout (untuk pastikan ia berfungsi selalu)
+  document.addEventListener('click', (e) => {
+    if (e.target.closest('#btnLogout')) {
+      e.preventDefault();
+      if (!confirm('Logout? Anda perlu masukkan PIN semula untuk buka app.')) return;
+      sessionStorage.removeItem('pin_ok');
+      location.reload();
+    }
+  });
+
+  $$('.filter button').forEach(b => {
+    b.onclick = () => {
+      $$('.filter button').forEach(x => x.classList.remove('aktif'));
+      b.classList.add('aktif');
+      filterAktif = b.dataset.filter;
+      renderSenarai();
+    };
+  });
+}
+
+// Buka app — panggil bila PIN betul ATAU dah login
+function bukaApp() {
+  $('#pinGate').style.display = 'none';
+  muatLocal();
+  renderSenarai();
+  if (GAS_URL) setStatus('✓');
+  pasangEvent();
+}
+
+// ---------- Mula ----------
+document.addEventListener('DOMContentLoaded', () => {
+  if (sessionStorage.getItem('pin_ok') === '1') {
+    bukaApp();
+  } else {
+    $('#pinGate').style.display = 'flex';
+  }
+});
+
+</script>
+</body>
+</html>
